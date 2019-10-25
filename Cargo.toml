@@ -4,9 +4,10 @@ version = "0.0.0"
 build = "build.rs"
 
 [build-dependencies]
-bindgen = "0.42.2"
+# We're very permissive here with bindgen due to https://github.com/rust-lang/cargo/issues/5237
+bindgen = "0.*"
 cc = "1.0"
 
 [dependencies]
-simple-error = "0.1.13"
-bitflags = "1.0.4"
+simple-error = "^0.1.12"
+bitflags = "^1.0.4"
