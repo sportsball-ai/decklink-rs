@@ -4,11 +4,31 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 #[macro_use] extern crate bitflags;
 extern crate simple_error;
 
+use std::ffi::c_void;
+use std::fmt;
+
 use simple_error::SimpleError;
 
 #[derive(Debug)]
 pub struct Error {
     pub result: HRESULT,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "decklink error: {}", self.result)
+    }
+}
+
+impl std::error::Error for Error {}
+
+fn void_result(result: HRESULT) -> Result<(), Error> {
+    match result {
+        0 => Ok(()),
+        result => Err(Error{
+            result: result,
+        }),
+    }
 }
 
 pub struct Device {
@@ -18,7 +38,7 @@ pub struct Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
-            decklink_release(self.implementation);
+            unknown_release(self.implementation as *mut IUnknown);
         }
     }
 }
@@ -66,7 +86,7 @@ impl Device {
     fn query_interface<T>(&self, iid: REFIID) -> Result<*mut T, Error> {
         unsafe {
             let mut iface: *mut T = std::ptr::null_mut();
-            match decklink_query_interface(self.implementation, iid, std::mem::transmute::<&mut *mut T, &mut *mut std::ffi::c_void>(&mut iface)) {
+            match decklink_query_interface(self.implementation, iid, std::mem::transmute::<&mut *mut T, &mut *mut c_void>(&mut iface)) {
                 0 => Ok(iface),
                 result => Err(Error{
                     result: result,
@@ -236,7 +256,7 @@ impl Attributes {
 impl Drop for Attributes {
     fn drop(&mut self) {
         unsafe {
-            decklink_attributes_release(self.implementation);
+            unknown_release(self.implementation as *mut IUnknown);
         }
     }
 }
@@ -249,24 +269,128 @@ bitflags! {
     }
 }
 
-pub struct DisplayModeId(pub u32);
+bitflags! {
+    pub struct DisplayModeFlags: u32 {
+        const SUPPORTS_3D = _BMDDisplayModeFlags_bmdDisplayModeSupports3D;
+        const COLORSPACE_REC601 = _BMDDisplayModeFlags_bmdDisplayModeColorspaceRec601;
+        const COLORSPACE_REC709 = _BMDDisplayModeFlags_bmdDisplayModeColorspaceRec709;
+        const COLORSPACE_REC2020 = _BMDDisplayModeFlags_bmdDisplayModeColorspaceRec2020;
+    }
+}
 
-pub struct DisplayMode {
+bitflags! {
+    pub struct VideoInputFlags: u32 {
+        const ENABLE_FORMAT_DETECTION = _BMDVideoInputFlags_bmdVideoInputEnableFormatDetection;
+        const DUAL_STREAM_3D = _BMDVideoInputFlags_bmdVideoInputDualStream3D;
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct PixelFormat(pub u32);
+
+impl PixelFormat {
+    pub const FORMAT_8BIT_YUV: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat8BitYUV);
+    pub const FORMAT_10BIT_YUV: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat10BitYUV);
+    pub const FORMAT_8BIT_ARGB: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat8BitARGB);
+    pub const FORMAT_8BIT_BGRA: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat8BitBGRA);
+    pub const FORMAT_10BIT_RGB: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat10BitRGB);
+    pub const FORMAT_12BIT_RGB: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat12BitRGB);
+    pub const FORMAT_12BIT_RGBLE: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat12BitRGBLE);
+    pub const FORMAT_10BIT_RGBXLE: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat10BitRGBXLE);
+    pub const FORMAT_10BIT_RGBX: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat10BitRGBX);
+    pub const FORMAT_H265: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormatH265);
+    pub const FORMAT_DNXHR: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormatDNxHR);
+    pub const FORMAT_12BIT_RAW_GRBG: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat12BitRAWGRBG);
+    pub const FORMAT_12BIT_RAW_JPEG: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat12BitRAWJPEG);
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct DisplayMode(pub u32);
+
+impl DisplayMode {
+    pub const MODE_NTSC: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeNTSC);
+    pub const MODE_NTSC2398: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeNTSC2398);
+    pub const MODE_PAL: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModePAL);
+    pub const MODE_NTSCP: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeNTSCp);
+    pub const MODE_PALP: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModePALp);
+    pub const MODE_HD1080P2398: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080p2398);
+    pub const MODE_HD1080P24: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080p24);
+    pub const MODE_HD1080P25: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080p25);
+    pub const MODE_HD1080P2997: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080p2997);
+    pub const MODE_HD1080P30: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080p30);
+    pub const MODE_HD1080P50: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080p50);
+    pub const MODE_HD1080P5994: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080p5994);
+    pub const MODE_HD1080P6000: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080p6000);
+    pub const MODE_HD1080I50: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080i50);
+    pub const MODE_HD1080I5994: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080i5994);
+    pub const MODE_HD1080I6000: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD1080i6000);
+    pub const MODE_HD720P50: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD720p50);
+    pub const MODE_HD720P5994: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD720p5994);
+    pub const MODE_HD720P60: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeHD720p60);
+    pub const MODE_2K2398: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2k2398);
+    pub const MODE_2K24: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2k24);
+    pub const MODE_2K25: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2k25);
+    pub const MODE_2KDCI2398: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2kDCI2398);
+    pub const MODE_2KDCI24: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2kDCI24);
+    pub const MODE_2KDCI25: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2kDCI25);
+    pub const MODE_2KDCI2997: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2kDCI2997);
+    pub const MODE_2KDCI30: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2kDCI30);
+    pub const MODE_2KDCI50: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2kDCI50);
+    pub const MODE_2KDCI5994: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2kDCI5994);
+    pub const MODE_2KDCI60: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode2kDCI60);
+    pub const MODE_4K2160P2398: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4K2160p2398);
+    pub const MODE_4K2160P24: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4K2160p24);
+    pub const MODE_4K2160P25: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4K2160p25);
+    pub const MODE_4K2160P2997: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4K2160p2997);
+    pub const MODE_4K2160P30: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4K2160p30);
+    pub const MODE_4K2160P50: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4K2160p50);
+    pub const MODE_4K2160P5994: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4K2160p5994);
+    pub const MODE_4K2160P60: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4K2160p60);
+    pub const MODE_4KDCI2398: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4kDCI2398);
+    pub const MODE_4KDCI24: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4kDCI24);
+    pub const MODE_4KDCI25: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4kDCI25);
+    pub const MODE_4KDCI2997: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4kDCI2997);
+    pub const MODE_4KDCI30: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4kDCI30);
+    pub const MODE_4KDCI50: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4kDCI50);
+    pub const MODE_4KDCI5994: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4kDCI5994);
+    pub const MODE_4KDCI60: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode4kDCI60);
+    pub const MODE_8K4320P2398: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8K4320p2398);
+    pub const MODE_8K4320P24: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8K4320p24);
+    pub const MODE_8K4320P25: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8K4320p25);
+    pub const MODE_8K4320P2997: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8K4320p2997);
+    pub const MODE_8K4320P30: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8K4320p30);
+    pub const MODE_8K4320P50: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8K4320p50);
+    pub const MODE_8K4320P5994: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8K4320p5994);
+    pub const MODE_8K4320P60: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8K4320p60);
+    pub const MODE_8KDCI2398: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8kDCI2398);
+    pub const MODE_8KDCI24: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8kDCI24);
+    pub const MODE_8KDCI25: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8kDCI25);
+    pub const MODE_8KDCI2997: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8kDCI2997);
+    pub const MODE_8KDCI30: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8kDCI30);
+    pub const MODE_8KDCI50: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8kDCI50);
+    pub const MODE_8KDCI5994: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8kDCI5994);
+    pub const MODE_8KDCI60: DisplayMode = DisplayMode(_BMDDisplayMode_bmdMode8kDCI60);
+    pub const MODE_CINTEL_RAW: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeCintelRAW);
+    pub const MODE_CINTEL_COMPRESSED_RAW: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeCintelCompressedRAW);
+    pub const MODE_UNKNOWN: DisplayMode = DisplayMode(_BMDDisplayMode_bmdModeUnknown);
+}
+
+pub struct DisplayModeInfo {
     implementation: *mut IDeckLinkDisplayMode,
 }
 
-impl Drop for DisplayMode {
+impl Drop for DisplayModeInfo {
     fn drop(&mut self) {
         unsafe {
-            decklink_display_mode_release(self.implementation);
+            unknown_release(self.implementation as *mut IUnknown);
         }
     }
 }
 
-impl DisplayMode {
-	pub fn get_id(&self) -> DisplayModeId {
+impl DisplayModeInfo {
+	pub fn get_display_mode(&self) -> DisplayMode {
         unsafe {
-			DisplayModeId(decklink_display_mode_get_display_mode(self.implementation) as u32)
+			DisplayMode(decklink_display_mode_get_display_mode(self.implementation) as u32)
         }
 	}
 
@@ -294,21 +418,21 @@ pub struct DisplayModeIterator {
 impl Drop for DisplayModeIterator {
     fn drop(&mut self) {
         unsafe {
-            decklink_display_mode_iterator_release(self.implementation);
+            unknown_release(self.implementation as *mut IUnknown);
         }
     }
 }
 
 impl std::iter::Iterator for DisplayModeIterator {
-    type Item = DisplayMode;
+    type Item = DisplayModeInfo;
 
-    fn next(&mut self) -> Option<DisplayMode> {
+    fn next(&mut self) -> Option<DisplayModeInfo> {
         unsafe {
             let mut mode: *mut IDeckLinkDisplayMode = std::ptr::null_mut();
             if decklink_display_mode_iterator_next(self.implementation, &mut mode) != 0 || mode.is_null() {
                 return None;
             }
-            return Some(DisplayMode{
+            return Some(DisplayModeInfo{
                 implementation: mode,
             });
         }
@@ -348,12 +472,12 @@ impl Status {
         }
     }
 
-    pub fn get_detected_video_input_mode(&self) -> Result<DisplayModeId, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusDetectedVideoInputMode).map(|v| DisplayModeId(v as u32)) }
+    pub fn get_detected_video_input_mode(&self) -> Result<DisplayMode, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusDetectedVideoInputMode).map(|v| DisplayMode(v as u32)) }
     pub fn get_detected_video_input_flags(&self) -> Result<i64, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusDetectedVideoInputFlags) }
-    pub fn get_current_video_input_mode(&self) -> Result<DisplayModeId, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusCurrentVideoInputMode).map(|v| DisplayModeId(v as u32)) }
+    pub fn get_current_video_input_mode(&self) -> Result<DisplayMode, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusCurrentVideoInputMode).map(|v| DisplayMode(v as u32)) }
     pub fn get_current_video_input_pixel_format(&self) -> Result<i64, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusCurrentVideoInputPixelFormat) }
     pub fn get_current_video_input_flags(&self) -> Result<i64, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusCurrentVideoInputFlags) }
-    pub fn get_current_video_output_mode(&self) -> Result<DisplayModeId, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusCurrentVideoOutputMode).map(|v| DisplayModeId(v as u32)) }
+    pub fn get_current_video_output_mode(&self) -> Result<DisplayMode, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusCurrentVideoOutputMode).map(|v| DisplayMode(v as u32)) }
     pub fn get_current_video_output_flags(&self) -> Result<i64, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusCurrentVideoOutputFlags) }
     pub fn get_pci_express_link_width(&self) -> Result<i64, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusPCIExpressLinkWidth) }
     pub fn get_pci_express_link_speed(&self) -> Result<i64, Error> { self.get_int(_BMDDeckLinkStatusID_bmdDeckLinkStatusPCIExpressLinkSpeed) }
@@ -369,7 +493,7 @@ impl Status {
 impl Drop for Status {
     fn drop(&mut self) {
         unsafe {
-            decklink_status_release(self.implementation);
+            unknown_release(self.implementation as *mut IUnknown);
         }
     }
 }
@@ -381,7 +505,7 @@ pub struct Iterator {
 impl Drop for Iterator {
     fn drop(&mut self) {
         unsafe {
-            decklink_iterator_release(self.implementation);
+            unknown_release(self.implementation as *mut IUnknown);
         }
     }
 }
@@ -416,6 +540,68 @@ impl Iterator {
     }
 }
 
+bitflags! {
+    pub struct VideoInputFormatChangedEvents: u32 {
+        const DISPLAY_MODE_CHANGED = _BMDVideoInputFormatChangedEvents_bmdVideoInputDisplayModeChanged;
+        const FIELD_DOMINANCE_CHANGED = _BMDVideoInputFormatChangedEvents_bmdVideoInputFieldDominanceChanged;
+        const COLORSPACE_CHANGED = _BMDVideoInputFormatChangedEvents_bmdVideoInputColorspaceChanged;
+    }
+}
+
+bitflags! {
+    pub struct DetectedVideoInputFormatFlags: u32 {
+        const YCBCR422 = _BMDDetectedVideoInputFormatFlags_bmdDetectedVideoInputYCbCr422;
+        const RGB444 = _BMDDetectedVideoInputFormatFlags_bmdDetectedVideoInputRGB444;
+        const DUAL_STREAM_3D = _BMDDetectedVideoInputFormatFlags_bmdDetectedVideoInputDualStream3D;
+    }
+}
+
+pub trait InputCallback {
+    fn video_input_format_changed(&mut self, _notification_events: VideoInputFormatChangedEvents, _new_display_mode: DisplayModeInfo, _detected_signal_flags: DetectedVideoInputFormatFlags) -> Result<(), Error> {
+        Ok(())
+    }
+
+    fn video_input_frame_arrived(&mut self, _video_frame: Option<VideoInputFrame>, _audio_packet: Option<AudioInputPacket>) -> Result<(), Error> {
+        Ok(())
+    }
+}
+
+#[no_mangle]
+unsafe extern "C" fn input_callback_video_input_format_changed(implementation: *mut Box<dyn InputCallback>, notification_events: u32, new_display_mode: *mut IDeckLinkDisplayMode, detected_signal_flags: u32) -> HRESULT {
+    let implementation = &mut *implementation;
+    match implementation.video_input_format_changed(VideoInputFormatChangedEvents::from_bits_truncate(notification_events), DisplayModeInfo{
+        implementation: new_display_mode,
+    }, DetectedVideoInputFormatFlags::from_bits_truncate(detected_signal_flags)) {
+        Ok(_) => 0,
+        Err(e) => e.result,
+    }
+}
+
+#[no_mangle]
+unsafe extern "C" fn input_callback_video_input_frame_arrived(implementation: *mut Box<dyn InputCallback>, video_frame: *mut IDeckLinkVideoInputFrame, audio_packet: *mut IDeckLinkAudioInputPacket) -> HRESULT {
+    let implementation = &mut *implementation;
+    match implementation.video_input_frame_arrived(match video_frame.is_null() {
+        true => None,
+        false => {
+            unknown_add_ref(video_frame as *mut IUnknown);
+            Some(VideoInputFrame{
+                implementation: video_frame,
+            })
+        },
+    }, match audio_packet.is_null() {
+        true => None,
+        false => {
+            unknown_add_ref(audio_packet as *mut IUnknown);
+            Some(AudioInputPacket{
+                implementation: audio_packet,
+            })
+        },
+    }) {
+        Ok(_) => 0,
+        Err(e) => e.result,
+    }
+}
+
 pub struct Input {
     implementation: *mut IDeckLinkInput,
 }
@@ -423,7 +609,7 @@ pub struct Input {
 impl Drop for Input {
     fn drop(&mut self) {
         unsafe {
-            decklink_input_release(self.implementation);
+            unknown_release(self.implementation as *mut IUnknown);
         }
     }
 }
@@ -442,6 +628,78 @@ impl Input {
             }
         }
     }
+
+    pub fn with_callback<T, F, V>(&mut self, callback: T, f: F) -> Result<V, Box<dyn std::error::Error>>
+        where T: InputCallback + 'static,
+              F: FnOnce(&mut Input) -> V,
+    {
+        let mut callback: Box<dyn InputCallback> = Box::new(callback);
+        unsafe {
+            self.set_callback(Some(&mut callback))?;
+        }
+        let ret = f(self);
+        unsafe {
+            self.set_callback(None)?;
+        }
+        Ok(ret)
+    }
+
+    /// The caller must ensure that the given callback lives until the callback is unset. Use with_callback for a safer alternative.
+    pub unsafe fn set_callback(&mut self, callback: Option<&mut Box<dyn InputCallback>>) -> Result<(), Error> {
+        match callback {
+            Some(callback) => {
+                let callback = create_decklink_input_callback(callback as *mut Box<dyn InputCallback> as *mut c_void);
+                let result = void_result(decklink_input_set_callback(self.implementation, callback));
+                unknown_release(callback as *mut IUnknown);
+                result
+            },
+            None => {
+                void_result(decklink_input_set_callback(self.implementation, std::ptr::null_mut()))
+            },
+        }
+    }
+
+    pub fn start_streams(&mut self) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_input_start_streams(self.implementation))
+        }
+    }
+
+    pub fn stop_streams(&mut self) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_input_stop_streams(self.implementation))
+        }
+    }
+
+    pub fn pause_streams(&mut self) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_input_pause_streams(self.implementation))
+        }
+    }
+
+    pub fn flush_streams(&mut self) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_input_flush_streams(self.implementation))
+        }
+    }
+
+    pub fn enable_video_input(&mut self, display_mode: DisplayMode, pixel_format: PixelFormat, flags: VideoInputFlags) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_input_enable_video_input(self.implementation, display_mode.0, pixel_format.0, flags.bits()))
+        }
+    }
+
+    pub fn disable_video_input(&mut self) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_input_disable_video_input(self.implementation))
+        }
+    }
+
+    pub fn disable_audio_input(&mut self) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_input_disable_audio_input(self.implementation))
+        }
+    }
 }
 
 pub struct Output {
@@ -451,7 +709,7 @@ pub struct Output {
 impl Drop for Output {
     fn drop(&mut self) {
         unsafe {
-            decklink_output_release(self.implementation);
+            unknown_release(self.implementation as *mut IUnknown);
         }
     }
 }
@@ -469,5 +727,151 @@ impl Output {
 				}),
             }
         }
+    }
+
+    pub fn create_video_frame(&mut self, width: i32, height: i32, row_bytes: i32, pixel_format: PixelFormat, flags: FrameFlags) -> Result<MutableVideoFrame, Error> {
+        unsafe {
+            let mut frame: *mut IDeckLinkMutableVideoFrame = std::ptr::null_mut();
+            match decklink_output_create_video_frame(self.implementation, width, height, row_bytes, pixel_format.0, flags.bits(), &mut frame) {
+				0 => Ok(MutableVideoFrame{
+					implementation: frame,
+				}),
+				result => Err(Error{
+					result: result,
+				}),
+            }
+        }
+    }
+}
+
+bitflags! {
+    pub struct FrameFlags: u32 {
+        const FLIP_VERTICAL = _BMDFrameFlags_bmdFrameFlagFlipVertical as u32;
+        const CONTAINS_HDR_METADATA = _BMDFrameFlags_bmdFrameContainsHDRMetadata as u32;
+        const CONTAINS_CINTEL_METADATA = _BMDFrameFlags_bmdFrameContainsCintelMetadata as u32;
+        const CAPTURED_AS_PS_F = _BMDFrameFlags_bmdFrameCapturedAsPsF as u32;
+        const HAS_NO_INPUT_SOURCE = _BMDFrameFlags_bmdFrameHasNoInputSource as u32;
+    }
+}
+
+pub struct VideoInputFrame {
+    implementation: *mut IDeckLinkVideoInputFrame,
+}
+
+impl Drop for VideoInputFrame {
+    fn drop(&mut self) {
+        unsafe {
+            unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+impl VideoFrame for VideoInputFrame {
+    unsafe fn implementation(&mut self) -> *mut IDeckLinkVideoFrame {
+        self.implementation as _
+    }
+}
+
+pub struct AudioInputPacket {
+    implementation: *mut IDeckLinkAudioInputPacket,
+}
+
+impl Drop for AudioInputPacket {
+    fn drop(&mut self) {
+        unsafe {
+            unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+pub struct VideoConversion {
+    implementation: *mut IDeckLinkVideoConversion,
+}
+
+impl Drop for VideoConversion {
+    fn drop(&mut self) {
+        unsafe {
+            unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+impl VideoConversion {
+    pub fn new() -> Result<VideoConversion, SimpleError> {
+        unsafe {
+            let conversion = create_decklink_video_conversion_instance();
+            if conversion.is_null() {
+                return Err(SimpleError::new("unable to create decklink video conversion. the latest decklink drivers may need to be installed"));
+            }
+            return Ok(VideoConversion{
+                implementation: conversion,
+            });
+        }
+    }
+
+    pub fn convert_frame<S: VideoFrame, D: VideoFrame>(&mut self, mut src_frame: S, dst_frame: &mut D) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_video_conversion_convert_frame(self.implementation, src_frame.implementation(), dst_frame.implementation()))
+        }
+    }
+}
+
+pub trait VideoFrame {
+    unsafe fn implementation(&mut self) -> *mut IDeckLinkVideoFrame;
+
+    fn get_width(&mut self) -> i32 {
+        unsafe {
+            decklink_video_frame_get_width(self.implementation()) as _
+        }
+    }
+
+    fn get_height(&mut self) -> i32 {
+        unsafe {
+            decklink_video_frame_get_height(self.implementation()) as _
+        }
+    }
+
+    fn get_row_bytes(&mut self) -> i32 {
+        unsafe {
+            decklink_video_frame_get_row_bytes(self.implementation()) as _
+        }
+    }
+
+    fn get_pixel_format(&mut self) -> PixelFormat {
+        unsafe {
+            PixelFormat(decklink_video_frame_get_pixel_format(self.implementation()))
+        }
+    }
+
+    fn get_flags(&mut self) -> FrameFlags {
+        unsafe {
+            FrameFlags::from_bits_truncate(decklink_video_frame_get_flags(self.implementation()))
+        }
+    }
+
+    fn get_bytes(&mut self) -> Result<&[u8], Error> {
+        unsafe {
+            let mut buf: *mut c_void = std::ptr::null_mut();
+            void_result(decklink_video_frame_get_bytes(self.implementation(), &mut buf))?;
+            Ok(std::slice::from_raw_parts(buf as *mut u8, (self.get_row_bytes() * self.get_height()) as usize))
+        }
+    }
+}
+
+pub struct MutableVideoFrame {
+    implementation: *mut IDeckLinkMutableVideoFrame,
+}
+
+impl Drop for MutableVideoFrame {
+    fn drop(&mut self) {
+        unsafe {
+            unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+impl VideoFrame for MutableVideoFrame {
+    unsafe fn implementation(&mut self) -> *mut IDeckLinkVideoFrame {
+        self.implementation as _
     }
 }

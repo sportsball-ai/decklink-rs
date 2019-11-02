@@ -41,6 +41,7 @@ fn main() {
 
     let bindings = bindings.header("src/lib.hpp")
         .whitelist_function("buffer_.+")
+        .whitelist_function("unknown_.+")
         .whitelist_function(".*decklink_.+")
         .whitelist_type("_BMD.+")
         .generate()
