@@ -35,6 +35,8 @@ pub struct Device {
     implementation: *mut IDeckLink,
 }
 
+unsafe impl Send for Device {}
+
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
@@ -135,6 +137,8 @@ impl Device {
 pub struct Attributes {
     implementation: *mut IDeckLinkAttributes,
 }
+
+unsafe impl Send for Attributes {}
 
 bitflags! {
     pub struct VideoIOSupport: u32 {
@@ -379,6 +383,8 @@ pub struct DisplayModeInfo {
     implementation: *mut IDeckLinkDisplayMode,
 }
 
+unsafe impl Send for DisplayModeInfo {}
+
 impl Drop for DisplayModeInfo {
     fn drop(&mut self) {
         unsafe {
@@ -415,6 +421,8 @@ pub struct DisplayModeIterator {
     implementation: *mut IDeckLinkDisplayModeIterator,
 }
 
+unsafe impl Send for DisplayModeIterator {}
+
 impl Drop for DisplayModeIterator {
     fn drop(&mut self) {
         unsafe {
@@ -442,6 +450,8 @@ impl std::iter::Iterator for DisplayModeIterator {
 pub struct Status {
     implementation: *mut IDeckLinkStatus,
 }
+
+unsafe impl Send for Status {}
 
 impl Status {
     fn get_flag(&self, id: BMDDeckLinkStatusID) -> Result<bool, Error> {
@@ -501,6 +511,8 @@ impl Drop for Status {
 pub struct Iterator {
     implementation: *mut IDeckLinkIterator,
 }
+
+unsafe impl Send for Iterator {}
 
 impl Drop for Iterator {
     fn drop(&mut self) {
@@ -606,6 +618,8 @@ pub struct Input {
     implementation: *mut IDeckLinkInput,
 }
 
+unsafe impl Send for Input {}
+
 impl Drop for Input {
     fn drop(&mut self) {
         unsafe {
@@ -630,10 +644,10 @@ impl Input {
     }
 
     pub fn with_callback<T, F, V>(&mut self, callback: T, f: F) -> Result<V, Box<dyn std::error::Error>>
-        where T: InputCallback + 'static,
+        where T: InputCallback + Send + 'static,
               F: FnOnce(&mut Input) -> V,
     {
-        let mut callback: Box<dyn InputCallback> = Box::new(callback);
+        let mut callback: Box<dyn InputCallback + Send> = Box::new(callback);
         unsafe {
             self.set_callback(Some(&mut callback))?;
         }
@@ -645,10 +659,10 @@ impl Input {
     }
 
     /// The caller must ensure that the given callback lives until the callback is unset. Use with_callback for a safer alternative.
-    pub unsafe fn set_callback(&mut self, callback: Option<&mut Box<dyn InputCallback>>) -> Result<(), Error> {
+    pub unsafe fn set_callback(&mut self, callback: Option<&mut Box<dyn InputCallback + Send>>) -> Result<(), Error> {
         match callback {
             Some(callback) => {
-                let callback = create_decklink_input_callback(callback as *mut Box<dyn InputCallback> as *mut c_void);
+                let callback = create_decklink_input_callback(callback as *mut Box<dyn InputCallback + Send> as *mut c_void);
                 let result = void_result(decklink_input_set_callback(self.implementation, callback));
                 unknown_release(callback as *mut IUnknown);
                 result
@@ -706,6 +720,8 @@ pub struct Output {
     implementation: *mut IDeckLinkOutput,
 }
 
+unsafe impl Send for Output {}
+
 impl Drop for Output {
     fn drop(&mut self) {
         unsafe {
@@ -758,6 +774,8 @@ pub struct VideoInputFrame {
     implementation: *mut IDeckLinkVideoInputFrame,
 }
 
+unsafe impl Send for VideoInputFrame {}
+
 impl Drop for VideoInputFrame {
     fn drop(&mut self) {
         unsafe {
@@ -776,6 +794,8 @@ pub struct AudioInputPacket {
     implementation: *mut IDeckLinkAudioInputPacket,
 }
 
+unsafe impl Send for AudioInputPacket {}
+
 impl Drop for AudioInputPacket {
     fn drop(&mut self) {
         unsafe {
@@ -787,6 +807,8 @@ impl Drop for AudioInputPacket {
 pub struct VideoConversion {
     implementation: *mut IDeckLinkVideoConversion,
 }
+
+unsafe impl Send for VideoConversion {}
 
 impl Drop for VideoConversion {
     fn drop(&mut self) {
@@ -861,6 +883,8 @@ pub trait VideoFrame {
 pub struct MutableVideoFrame {
     implementation: *mut IDeckLinkMutableVideoFrame,
 }
+
+unsafe impl Send for MutableVideoFrame {}
 
 impl Drop for MutableVideoFrame {
     fn drop(&mut self) {
