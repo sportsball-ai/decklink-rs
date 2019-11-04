@@ -47,9 +47,13 @@ long decklink_video_frame_get_row_bytes(IDeckLinkVideoFrame* frame);
 BMDPixelFormat decklink_video_frame_get_pixel_format(IDeckLinkVideoFrame* frame);
 BMDFrameFlags decklink_video_frame_get_flags(IDeckLinkVideoFrame* frame);
 HRESULT decklink_video_frame_get_bytes(IDeckLinkVideoFrame* frame, void** bytes);
+HRESULT decklink_video_frame_get_timecode(IDeckLinkVideoFrame* frame, BMDTimecodeFormat format, IDeckLinkTimecode** timecode);
 
 IDeckLinkVideoConversion* create_decklink_video_conversion_instance();
 HRESULT decklink_video_conversion_convert_frame(IDeckLinkVideoConversion* conversion, IDeckLinkVideoFrame* srcFrame, IDeckLinkVideoFrame* dstFrame);
+
+HRESULT decklink_timecode_get_components(IDeckLinkTimecode* timecode, uint8_t* hours, uint8_t* minutes, uint8_t* seconds, uint8_t* frames);
+HRESULT decklink_timecode_get_string(IDeckLinkTimecode* timecode, Buffer** value);
 
 const void* buffer_data(Buffer* str);
 void buffer_release(Buffer* str);

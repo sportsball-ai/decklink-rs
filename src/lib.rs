@@ -289,7 +289,7 @@ bitflags! {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PixelFormat(pub u32);
 
 impl PixelFormat {
@@ -308,7 +308,7 @@ impl PixelFormat {
     pub const FORMAT_12BIT_RAW_JPEG: PixelFormat = PixelFormat(_BMDPixelFormat_bmdFormat12BitRAWJPEG);
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DisplayMode(pub u32);
 
 impl DisplayMode {
@@ -790,6 +790,12 @@ impl VideoFrame for VideoInputFrame {
     }
 }
 
+impl VideoFrame for &mut VideoInputFrame {
+    unsafe fn implementation(&mut self) -> *mut IDeckLinkVideoFrame {
+        self.implementation as _
+    }
+}
+
 pub struct AudioInputPacket {
     implementation: *mut IDeckLinkAudioInputPacket,
 }
@@ -878,6 +884,16 @@ pub trait VideoFrame {
             Ok(std::slice::from_raw_parts(buf as *mut u8, (self.get_row_bytes() * self.get_height()) as usize))
         }
     }
+
+    fn get_timecode(&mut self, format: TimecodeFormat) -> Result<Timecode, Error> {
+        unsafe {
+            let mut timecode: *mut IDeckLinkTimecode = std::ptr::null_mut();
+            void_result(decklink_video_frame_get_timecode(self.implementation(), format.0, &mut timecode))?;
+            Ok(Timecode{
+                implementation: timecode,
+            })
+        }
+    }
 }
 
 pub struct MutableVideoFrame {
@@ -897,5 +913,58 @@ impl Drop for MutableVideoFrame {
 impl VideoFrame for MutableVideoFrame {
     unsafe fn implementation(&mut self) -> *mut IDeckLinkVideoFrame {
         self.implementation as _
+    }
+}
+
+impl VideoFrame for &mut MutableVideoFrame {
+    unsafe fn implementation(&mut self) -> *mut IDeckLinkVideoFrame {
+        self.implementation as _
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TimecodeFormat(pub u32);
+
+impl TimecodeFormat {
+    pub const FORMAT_RP188_VITC1: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188VITC1);
+    pub const FORMAT_RP188_VITC2: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188VITC2);
+    pub const FORMAT_RP188_LTC: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188LTC);
+    pub const FORMAT_RP188_ANY: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188Any);
+    pub const FORMAT_VITC: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeVITC);
+    pub const FORMAT_VITC_FIELD2: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeVITCField2);
+    pub const FORMAT_SERIAL: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeSerial);
+}
+
+pub struct Timecode {
+    implementation: *mut IDeckLinkTimecode,
+}
+
+unsafe impl Send for Timecode {}
+
+impl Drop for Timecode {
+    fn drop(&mut self) {
+        unsafe {
+            unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+impl Timecode {
+    pub fn get_components(&self) -> Result<(u8, u8, u8, u8), Error> {
+        unsafe {
+            let mut components = (0, 0, 0, 0);
+            void_result(decklink_timecode_get_components(self.implementation, &mut components.0, &mut components.1, &mut components.2, &mut components.3))?;
+            Ok(components)
+        }
+    }
+
+    pub fn get_string(&self) -> Result<String, Error> {
+        unsafe {
+            let mut v: *mut Buffer = std::ptr::null_mut();
+            void_result(decklink_timecode_get_string(self.implementation, &mut v))?;
+            let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const i8).to_str().unwrap_or("").to_string());
+            buffer_release(v);
+            ret
+        }
     }
 }
