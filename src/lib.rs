@@ -31,6 +31,16 @@ fn void_result(result: HRESULT) -> Result<(), Error> {
     }
 }
 
+fn void_option_result(result: HRESULT) -> Result<Option<()>, Error> {
+    match result {
+        0 => Ok(Some(())),
+        1 => Ok(None),
+        result => Err(Error{
+            result: result,
+        }),
+    }
+}
+
 pub struct Device {
     implementation: *mut IDeckLink,
 }
@@ -181,6 +191,10 @@ impl Attributes {
     pub fn get_supports_duplex_mode_configuration(&self) -> Result<bool, Error> { self.get_flag(_BMDDeckLinkAttributeID_BMDDeckLinkSupportsDuplexModeConfiguration) }
     pub fn get_supports_hdr_metadata(&self) -> Result<bool, Error> { self.get_flag(_BMDDeckLinkAttributeID_BMDDeckLinkSupportsHDRMetadata) }
     pub fn get_supports_colorspace_metadata(&self) -> Result<bool, Error> { self.get_flag(_BMDDeckLinkAttributeID_BMDDeckLinkSupportsColorspaceMetadata) }
+    pub fn get_supports_hdmi_timecode(&self) -> Result<bool, Error> { self.get_flag(_BMDDeckLinkAttributeID_BMDDeckLinkSupportsHDMITimecode) }
+    pub fn get_supports_high_frame_rate_timecode(&self) -> Result<bool, Error> { self.get_flag(_BMDDeckLinkAttributeID_BMDDeckLinkSupportsHighFrameRateTimecode) }
+    pub fn get_supports_synchronize_to_capture_group(&self) -> Result<bool, Error> { self.get_flag(_BMDDeckLinkAttributeID_BMDDeckLinkSupportsSynchronizeToCaptureGroup) }
+    pub fn get_supports_synchronize_to_playback_group(&self) -> Result<bool, Error> { self.get_flag(_BMDDeckLinkAttributeID_BMDDeckLinkSupportsSynchronizeToPlaybackGroup) }
 
     fn get_int(&self, id: BMDDeckLinkAttributeID) -> Result<i64, Error> {
         unsafe {
@@ -885,13 +899,12 @@ pub trait VideoFrame {
         }
     }
 
-    fn get_timecode(&mut self, format: TimecodeFormat) -> Result<Timecode, Error> {
+    fn get_timecode(&mut self, format: TimecodeFormat) -> Result<Option<Timecode>, Error> {
         unsafe {
             let mut timecode: *mut IDeckLinkTimecode = std::ptr::null_mut();
-            void_result(decklink_video_frame_get_timecode(self.implementation(), format.0, &mut timecode))?;
-            Ok(Timecode{
+            Ok(void_option_result(decklink_video_frame_get_timecode(self.implementation(), format.0, &mut timecode))?.map(|_| Timecode{
                 implementation: timecode,
-            })
+            }))
         }
     }
 }
