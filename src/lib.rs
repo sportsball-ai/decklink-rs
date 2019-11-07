@@ -942,6 +942,7 @@ impl TimecodeFormat {
     pub const FORMAT_RP188_VITC1: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188VITC1);
     pub const FORMAT_RP188_VITC2: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188VITC2);
     pub const FORMAT_RP188_LTC: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188LTC);
+    pub const FORMAT_RP188_HIGH_FRAME_RATE: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188HighFrameRate);
     pub const FORMAT_RP188_ANY: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeRP188Any);
     pub const FORMAT_VITC: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeVITC);
     pub const FORMAT_VITC_FIELD2: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeVITCField2);
