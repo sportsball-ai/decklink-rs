@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <cstring>
 
 struct Buffer {
     explicit Buffer(const char* data) : _data(data) {}

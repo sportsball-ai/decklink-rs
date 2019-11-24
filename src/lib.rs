@@ -1,4 +1,4 @@
-#![allow(non_upper_case_globals)]
+#![allow(non_upper_case_globals, non_snake_case)]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 #[macro_use] extern crate bitflags;
