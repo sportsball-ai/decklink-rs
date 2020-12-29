@@ -4,6 +4,8 @@ struct Buffer;
 
 extern "C" {
 
+HRESULT decklink_get_e_fail();
+
 ULONG unknown_add_ref(IUnknown* obj);
 ULONG unknown_release(IUnknown* obj);
 
@@ -33,13 +35,22 @@ HRESULT decklink_input_set_callback(IDeckLinkInput* input, IDeckLinkInputCallbac
 
 HRESULT decklink_output_get_display_mode_iterator(IDeckLinkOutput* output, IDeckLinkDisplayModeIterator** iterator);
 HRESULT decklink_output_create_video_frame(IDeckLinkOutput* output, int32_t width, int32_t height, int32_t rowBytes, BMDPixelFormat pixelFormat, BMDFrameFlags flags, IDeckLinkMutableVideoFrame **outFrame);
+HRESULT decklink_output_disable_video_output(IDeckLinkOutput* output);
+HRESULT decklink_output_enable_video_output(IDeckLinkOutput* output, BMDDisplayMode displayMode, BMDVideoOutputFlags flags);
+HRESULT decklink_output_set_scheduled_frame_completion_callback(IDeckLinkOutput* output, IDeckLinkVideoOutputCallback* callback);
+HRESULT decklink_output_start_scheduled_playback(IDeckLinkOutput* output, BMDTimeValue playbackStartTime, BMDTimeScale timeScale, double playbackSpeed);
+HRESULT decklink_output_schedule_video_frame(IDeckLinkOutput* output, IDeckLinkVideoFrame* theFrame, BMDTimeValue displayTime, BMDTimeValue displayDuration, BMDTimeScale timeScale);
 
 HRESULT decklink_display_mode_iterator_next(IDeckLinkDisplayModeIterator* iterator, IDeckLinkDisplayMode** deckLinkDisplayMode);
 
 BMDDisplayMode decklink_display_mode_get_display_mode(IDeckLinkDisplayMode* mode);
 HRESULT decklink_display_mode_get_name(IDeckLinkDisplayMode* mode, Buffer** value);
+HRESULT decklink_display_mode_get_frame_rate(IDeckLinkDisplayMode* mode, BMDTimeValue* frameDuration, BMDTimeScale* timeScale);
+long decklink_display_mode_get_width(IDeckLinkDisplayMode* mode);
+long decklink_display_mode_get_height(IDeckLinkDisplayMode* mode);
 
 IDeckLinkInputCallback* create_decklink_input_callback(void* implementation);
+IDeckLinkVideoOutputCallback* create_decklink_video_output_callback(void* implementation);
 
 long decklink_video_frame_get_width(IDeckLinkVideoFrame* frame);
 long decklink_video_frame_get_height(IDeckLinkVideoFrame* frame);
