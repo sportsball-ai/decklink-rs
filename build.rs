@@ -37,15 +37,16 @@ fn main() {
             .file("vendor/Linux/include/DeckLinkAPIDispatch_v10_8.cpp")
             .compile("decklink");
 
-        bindings = bindgen::Builder::default()
-            .clang_arg("-Ivendor/Linux/include")
+        bindings = bindgen::Builder::default().clang_arg("-Ivendor/Linux/include")
     }
 
-    let bindings = bindings.header("src/lib.hpp")
+    let bindings = bindings
+        .header("src/lib.hpp")
         .whitelist_function("buffer_.+")
         .whitelist_function("unknown_.+")
         .whitelist_function(".*decklink_.+")
         .whitelist_type("_BMD.+")
+        .layout_tests(false)
         .generate()
         .expect("unable to generate bindings");
 
