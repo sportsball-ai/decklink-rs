@@ -465,6 +465,20 @@ impl PixelFormat {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct OutputFrameCompletionResult(pub u32);
+
+impl OutputFrameCompletionResult {
+    pub const COMPLETED: OutputFrameCompletionResult =
+        OutputFrameCompletionResult(_BMDOutputFrameCompletionResult_bmdOutputFrameCompleted);
+    pub const DISPLAYED_LATE: OutputFrameCompletionResult =
+        OutputFrameCompletionResult(_BMDOutputFrameCompletionResult_bmdOutputFrameDisplayedLate);
+    pub const DROPPED: OutputFrameCompletionResult =
+        OutputFrameCompletionResult(_BMDOutputFrameCompletionResult_bmdOutputFrameDropped);
+    pub const FLUSHED: OutputFrameCompletionResult =
+        OutputFrameCompletionResult(_BMDOutputFrameCompletionResult_bmdOutputFrameFlushed);
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DisplayMode(pub u32);
 
 impl DisplayMode {
@@ -1024,6 +1038,7 @@ pub trait VideoOutputCallback {
     fn scheduled_frame_completed(
         &mut self,
         _completed_frame: MutableVideoFrame,
+        _result: OutputFrameCompletionResult,
     ) -> Result<(), Error> {
         Ok(())
     }
@@ -1081,7 +1096,7 @@ impl<'a> Drop for OutputWithCallback<'a> {
 unsafe extern "C" fn video_output_callback_scheduled_frame_completed(
     implementation: *mut Box<dyn VideoOutputCallback>,
     completed_frame: *mut IDeckLinkVideoFrame,
-    _result: BMDOutputFrameCompletionResult,
+    result: BMDOutputFrameCompletionResult,
 ) -> HRESULT {
     let implementation = &mut *implementation;
     let completed_frame = {
@@ -1090,7 +1105,9 @@ unsafe extern "C" fn video_output_callback_scheduled_frame_completed(
             implementation: completed_frame as _,
         }
     };
-    match implementation.scheduled_frame_completed(completed_frame) {
+    match implementation
+        .scheduled_frame_completed(completed_frame, OutputFrameCompletionResult(result))
+    {
         Ok(_) => 0,
         Err(e) => e.result,
     }
@@ -1243,6 +1260,7 @@ impl Output {
 
 bitflags! {
     pub struct FrameFlags: u32 {
+        const DEFAULT = _BMDFrameFlags_bmdFrameFlagDefault as u32;
         const FLIP_VERTICAL = _BMDFrameFlags_bmdFrameFlagFlipVertical as u32;
         const CONTAINS_HDR_METADATA = _BMDFrameFlags_bmdFrameContainsHDRMetadata as u32;
         const CONTAINS_CINTEL_METADATA = _BMDFrameFlags_bmdFrameContainsCintelMetadata as u32;
@@ -1397,6 +1415,22 @@ impl Drop for MutableVideoFrame {
     fn drop(&mut self) {
         unsafe {
             unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+impl MutableVideoFrame {
+    pub fn get_bytes_mut(&mut self) -> Result<&mut [u8], Error> {
+        unsafe {
+            let mut buf: *mut c_void = std::ptr::null_mut();
+            void_result(decklink_video_frame_get_bytes(
+                self.implementation(),
+                &mut buf,
+            ))?;
+            Ok(std::slice::from_raw_parts_mut(
+                buf as *mut u8,
+                (self.get_row_bytes() * self.get_height()) as usize,
+            ))
         }
     }
 }
