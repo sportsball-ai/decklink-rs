@@ -4,6 +4,10 @@
 #include <cstdlib>
 #include <cstring>
 
+HRESULT decklink_get_e_fail() {
+    return E_FAIL;
+}
+
 struct Buffer {
     explicit Buffer(const char* data) : _data(data) {}
     ~Buffer() {
@@ -143,6 +147,26 @@ HRESULT decklink_output_create_video_frame(IDeckLinkOutput* output, int32_t widt
 	return output->CreateVideoFrame(width, height, rowBytes, pixelFormat, flags, outFrame);
 }
 
+HRESULT decklink_output_disable_video_output(IDeckLinkOutput* output) {
+    return output->DisableVideoOutput();
+}
+
+HRESULT decklink_output_enable_video_output(IDeckLinkOutput* output, BMDDisplayMode displayMode, BMDVideoOutputFlags flags) {
+    return output->EnableVideoOutput(displayMode, flags);
+}
+
+HRESULT decklink_output_set_scheduled_frame_completion_callback(IDeckLinkOutput* output, IDeckLinkVideoOutputCallback* callback) {
+    return output->SetScheduledFrameCompletionCallback(callback);
+}
+
+HRESULT decklink_output_start_scheduled_playback(IDeckLinkOutput* output, BMDTimeValue playbackStartTime, BMDTimeScale timeScale, double playbackSpeed) {
+    return output->StartScheduledPlayback(playbackStartTime, timeScale, playbackSpeed);
+}
+
+HRESULT decklink_output_schedule_video_frame(IDeckLinkOutput* output, IDeckLinkVideoFrame* theFrame, BMDTimeValue displayTime, BMDTimeValue displayDuration, BMDTimeScale timeScale) {
+    return output->ScheduleVideoFrame(theFrame, displayTime, displayDuration, timeScale);
+}
+
 HRESULT decklink_display_mode_iterator_next(IDeckLinkDisplayModeIterator* iterator, IDeckLinkDisplayMode** deckLinkDisplayMode) {
 	return iterator->Next(deckLinkDisplayMode);
 }
@@ -153,6 +177,18 @@ BMDDisplayMode decklink_display_mode_get_display_mode(IDeckLinkDisplayMode* mode
 
 HRESULT decklink_display_mode_get_name(IDeckLinkDisplayMode* mode, Buffer** value) {
 	return mode->GetName(StringArg(value));
+}
+
+HRESULT decklink_display_mode_get_frame_rate(IDeckLinkDisplayMode* mode, BMDTimeValue* frameDuration, BMDTimeScale* timeScale) {
+    return mode->GetFrameRate(frameDuration, timeScale);
+}
+
+long decklink_display_mode_get_width(IDeckLinkDisplayMode* mode) {
+    return mode->GetWidth();
+}
+
+long decklink_display_mode_get_height(IDeckLinkDisplayMode* mode) {
+    return mode->GetHeight();
 }
 
 extern HRESULT input_callback_video_input_format_changed(void*, BMDVideoInputFormatChangedEvents, IDeckLinkDisplayMode*, BMDDetectedVideoInputFormatFlags);
@@ -210,6 +246,64 @@ struct InputCallback: IDeckLinkInputCallback {
 
 IDeckLinkInputCallback* create_decklink_input_callback(void* implementation) {
     return new InputCallback(implementation);
+}
+
+extern HRESULT video_output_callback_scheduled_frame_completed(void*, IDeckLinkVideoFrame*, BMDOutputFrameCompletionResult);
+extern HRESULT video_output_callback_scheduled_playback_has_stopped(void*);
+
+struct VideoOutputCallback: IDeckLinkVideoOutputCallback {
+    explicit VideoOutputCallback(void* implementation) : _ref_count(1), _implementation(implementation) {}
+    virtual ~VideoOutputCallback() {}
+
+
+    virtual HRESULT ScheduledFrameCompleted(IDeckLinkVideoFrame* completedFrame, BMDOutputFrameCompletionResult result) {
+        return video_output_callback_scheduled_frame_completed(_implementation, completedFrame, result);
+    }
+
+    virtual HRESULT ScheduledPlaybackHasStopped(void) {
+        return video_output_callback_scheduled_playback_has_stopped(_implementation);
+    }
+
+    virtual HRESULT QueryInterface(REFIID iid, LPVOID *ppv) {
+        if (ppv == NULL) {
+            return E_INVALIDARG;
+        }
+
+        *ppv = NULL;
+
+        CFUUIDBytes iunknown = CFUUIDGetUUIDBytes(IUnknownUUID);
+        HRESULT result = E_NOINTERFACE;
+        if (memcmp(&iid, &iunknown, sizeof(REFIID)) == 0) {
+            *ppv = this;
+            AddRef();
+            result = S_OK;
+        } else if (memcmp(&iid, &IID_IDeckLinkVideoOutputCallback, sizeof(REFIID)) == 0) {
+            *ppv = (IDeckLinkVideoOutputCallback*)this;
+            AddRef();
+            result = S_OK;
+        }
+
+        return result;
+    }
+
+    virtual ULONG AddRef() {
+        return _ref_count.fetch_add(1);
+    }
+
+    virtual ULONG Release() {
+        int refs = _ref_count.fetch_sub(1);
+        if (refs == 0) {
+            delete this;
+        }
+        return refs;
+    }
+
+    std::atomic<uint32_t> _ref_count;
+    void* _implementation;
+};
+
+IDeckLinkVideoOutputCallback* create_decklink_video_output_callback(void* implementation) {
+    return new VideoOutputCallback(implementation);
 }
 
 long decklink_video_frame_get_width(IDeckLinkVideoFrame* frame) {
