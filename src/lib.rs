@@ -828,8 +828,11 @@ unsafe extern "C" fn input_callback_video_input_format_changed(
     let implementation = &mut *implementation;
     match implementation.video_input_format_changed(
         VideoInputFormatChangedEvents::from_bits_truncate(notification_events),
-        DisplayModeInfo {
-            implementation: new_display_mode,
+        {
+            unknown_add_ref(new_display_mode as *mut IUnknown);
+            DisplayModeInfo {
+                implementation: new_display_mode,
+            }
         },
         DetectedVideoInputFormatFlags::from_bits_truncate(detected_signal_flags),
     ) {
