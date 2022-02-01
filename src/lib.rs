@@ -564,6 +564,7 @@ impl Drop for DisplayModeInfo {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FieldDominance {
     Unknown,
     LowerFieldFirst,
