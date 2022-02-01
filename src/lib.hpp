@@ -48,6 +48,7 @@ HRESULT decklink_display_mode_get_name(IDeckLinkDisplayMode* mode, Buffer** valu
 HRESULT decklink_display_mode_get_frame_rate(IDeckLinkDisplayMode* mode, BMDTimeValue* frameDuration, BMDTimeScale* timeScale);
 long decklink_display_mode_get_width(IDeckLinkDisplayMode* mode);
 long decklink_display_mode_get_height(IDeckLinkDisplayMode* mode);
+BMDFieldDominance decklink_display_mode_get_field_dominance(IDeckLinkDisplayMode* mode);
 
 IDeckLinkInputCallback* create_decklink_input_callback(void* implementation);
 IDeckLinkVideoOutputCallback* create_decklink_video_output_callback(void* implementation);
