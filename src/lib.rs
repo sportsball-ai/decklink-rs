@@ -564,6 +564,14 @@ impl Drop for DisplayModeInfo {
     }
 }
 
+pub enum FieldDominance {
+    Unknown,
+    LowerFieldFirst,
+    UpperFieldFirst,
+    ProgressiveFrame,
+    ProgressiveSegmentedFrame,
+}
+
 impl DisplayModeInfo {
     pub fn get_display_mode(&self) -> DisplayMode {
         unsafe { DisplayMode(decklink_display_mode_get_display_mode(self.implementation) as u32) }
@@ -592,6 +600,18 @@ impl DisplayModeInfo {
 
     pub fn get_height(&mut self) -> i32 {
         unsafe { decklink_display_mode_get_height(self.implementation) as _ }
+    }
+
+    pub fn get_field_dominance(&mut self) -> FieldDominance {
+        match unsafe { decklink_display_mode_get_field_dominance(self.implementation) } {
+            _BMDFieldDominance_bmdLowerFieldFirst => FieldDominance::LowerFieldFirst,
+            _BMDFieldDominance_bmdUpperFieldFirst => FieldDominance::UpperFieldFirst,
+            _BMDFieldDominance_bmdProgressiveFrame => FieldDominance::ProgressiveFrame,
+            _BMDFieldDominance_bmdProgressiveSegmentedFrame => {
+                FieldDominance::ProgressiveSegmentedFrame
+            }
+            _ => FieldDominance::Unknown,
+        }
     }
 
     pub fn get_frame_rate(&mut self) -> Result<(i64, i64), Error> {

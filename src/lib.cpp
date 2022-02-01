@@ -191,6 +191,10 @@ long decklink_display_mode_get_height(IDeckLinkDisplayMode* mode) {
     return mode->GetHeight();
 }
 
+BMDFieldDominance decklink_display_mode_get_field_dominance(IDeckLinkDisplayMode* mode) {
+    return mode->GetFieldDominance();
+}
+
 extern HRESULT input_callback_video_input_format_changed(void*, BMDVideoInputFormatChangedEvents, IDeckLinkDisplayMode*, BMDDetectedVideoInputFormatFlags);
 extern HRESULT input_callback_video_input_frame_arrived(void*, IDeckLinkVideoInputFrame*, IDeckLinkAudioInputPacket*);
 
