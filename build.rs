@@ -13,12 +13,19 @@ fn main() {
         println!("cargo:rustc-link-lib=framework=CoreFoundation");
 
         cc::Build::new()
+            .flag("-stdlib=libc++")
             .include("vendor/Mac/include")
             .file("src/lib.cpp")
             .file("vendor/Mac/include/DeckLinkAPIDispatch_v10_8.cpp")
             .compile("decklink");
 
-        let sdk_root = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk";
+        let sdk_root = std::process::Command::new("xcrun")
+            .args(["--sdk", "macosx", "--show-sdk-path"])
+            .stderr(std::process::Stdio::inherit())
+            .output()
+            .expect("unable to get sdk path")
+            .stdout;
+        let sdk_root = String::from_utf8_lossy(&sdk_root).trim().to_string();
 
         bindings = bindgen::Builder::default()
             .clang_arg("-x")
