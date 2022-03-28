@@ -28,6 +28,7 @@ HRESULT decklink_input_start_streams(IDeckLinkInput* input);
 HRESULT decklink_input_stop_streams(IDeckLinkInput* input);
 HRESULT decklink_input_pause_streams(IDeckLinkInput* input);
 HRESULT decklink_input_flush_streams(IDeckLinkInput* input);
+HRESULT decklink_input_enable_audio_input(IDeckLinkInput* input, BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, uint32_t channelCount);
 HRESULT decklink_input_enable_video_input(IDeckLinkInput* input, BMDDisplayMode displayMode, BMDPixelFormat pixelFormat, BMDVideoInputFlags flags);
 HRESULT decklink_input_disable_video_input(IDeckLinkInput* input);
 HRESULT decklink_input_disable_audio_input(IDeckLinkInput* input);
@@ -53,6 +54,10 @@ BMDFieldDominance decklink_display_mode_get_field_dominance(IDeckLinkDisplayMode
 IDeckLinkInputCallback* create_decklink_input_callback(void* implementation);
 IDeckLinkVideoOutputCallback* create_decklink_video_output_callback(void* implementation);
 
+long decklink_audio_input_packet_get_sample_frame_count(IDeckLinkAudioInputPacket* packet);
+HRESULT decklink_audio_input_packet_get_bytes(IDeckLinkAudioInputPacket* packet, void** bytes);
+HRESULT decklink_audio_input_packet_get_packet_time(IDeckLinkAudioInputPacket* packet, BMDTimeValue* packetTime, BMDTimeScale timeScale);
+
 long decklink_video_frame_get_width(IDeckLinkVideoFrame* frame);
 long decklink_video_frame_get_height(IDeckLinkVideoFrame* frame);
 long decklink_video_frame_get_row_bytes(IDeckLinkVideoFrame* frame);
@@ -60,6 +65,9 @@ BMDPixelFormat decklink_video_frame_get_pixel_format(IDeckLinkVideoFrame* frame)
 BMDFrameFlags decklink_video_frame_get_flags(IDeckLinkVideoFrame* frame);
 HRESULT decklink_video_frame_get_bytes(IDeckLinkVideoFrame* frame, void** bytes);
 HRESULT decklink_video_frame_get_timecode(IDeckLinkVideoFrame* frame, BMDTimecodeFormat format, IDeckLinkTimecode** timecode);
+
+HRESULT decklink_video_input_frame_get_stream_time(IDeckLinkVideoInputFrame* frame, BMDTimeValue* frameTime, BMDTimeValue* frameDuration, BMDTimeScale timeScale);
+HRESULT decklink_video_input_frame_get_hardware_reference_timestamp(IDeckLinkVideoInputFrame* frame, BMDTimeScale timeScale, BMDTimeValue* frameTime, BMDTimeValue* frameDuration);
 
 IDeckLinkVideoConversion* create_decklink_video_conversion_instance();
 HRESULT decklink_video_conversion_convert_frame(IDeckLinkVideoConversion* conversion, IDeckLinkVideoFrame* srcFrame, IDeckLinkVideoFrame* dstFrame);
