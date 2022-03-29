@@ -952,6 +952,21 @@ impl<'a> Drop for InputWithCallback<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AudioSampleType {
+    I16,
+    I32,
+}
+
+impl From<AudioSampleType> for BMDAudioSampleType {
+    fn from(t: AudioSampleType) -> Self {
+        match t {
+            AudioSampleType::I16 => _BMDAudioSampleType_bmdAudioSampleType16bitInteger,
+            AudioSampleType::I32 => _BMDAudioSampleType_bmdAudioSampleType32bitInteger,
+        }
+    }
+}
+
 impl Input {
     pub fn get_display_mode_iterator(&mut self) -> Result<DisplayModeIterator, Error> {
         unsafe {
@@ -1016,6 +1031,22 @@ impl Input {
 
     pub fn flush_streams(&mut self) -> Result<(), Error> {
         unsafe { void_result(decklink_input_flush_streams(self.implementation)) }
+    }
+
+    pub fn enable_audio_input(
+        &mut self,
+        sample_rate: u32,
+        sample_type: AudioSampleType,
+        channel_count: u32,
+    ) -> Result<(), Error> {
+        unsafe {
+            void_result(decklink_input_enable_audio_input(
+                self.implementation,
+                sample_rate,
+                sample_type.into(),
+                channel_count,
+            ))
+        }
     }
 
     pub fn enable_video_input(
@@ -1299,6 +1330,39 @@ pub struct VideoInputFrame {
 
 unsafe impl Send for VideoInputFrame {}
 
+impl VideoInputFrame {
+    pub fn get_stream_time(&mut self, time_scale: i64) -> Result<(i64, i64), Error> {
+        let mut frame_duration = 0;
+        let mut frame_time = 0;
+        unsafe {
+            void_result(decklink_video_input_frame_get_stream_time(
+                self.implementation,
+                &mut frame_time,
+                &mut frame_duration,
+                time_scale,
+            ))?;
+        }
+        Ok((frame_time, frame_duration))
+    }
+
+    pub fn get_hardware_reference_timestamp(
+        &mut self,
+        time_scale: i64,
+    ) -> Result<(i64, i64), Error> {
+        let mut frame_duration = 0;
+        let mut frame_time = 0;
+        unsafe {
+            void_result(decklink_video_input_frame_get_hardware_reference_timestamp(
+                self.implementation,
+                time_scale,
+                &mut frame_time,
+                &mut frame_duration,
+            ))?;
+        }
+        Ok((frame_time, frame_duration))
+    }
+}
+
 impl Drop for VideoInputFrame {
     fn drop(&mut self) {
         unsafe {
@@ -1321,6 +1385,35 @@ impl VideoFrame for &mut VideoInputFrame {
 
 pub struct AudioInputPacket {
     implementation: *mut IDeckLinkAudioInputPacket,
+}
+
+impl AudioInputPacket {
+    pub fn get_sample_frame_count(&mut self) -> usize {
+        unsafe { decklink_audio_input_packet_get_sample_frame_count(self.implementation) as _ }
+    }
+
+    pub fn get_bytes_raw(&mut self) -> Result<*const u8, Error> {
+        let mut buf: *mut c_void = std::ptr::null_mut();
+        unsafe {
+            void_result(decklink_audio_input_packet_get_bytes(
+                self.implementation,
+                &mut buf,
+            ))?;
+        }
+        Ok(buf as *mut u8)
+    }
+
+    pub fn get_packet_time(&mut self, time_scale: i64) -> Result<i64, Error> {
+        let mut ret = 0;
+        unsafe {
+            void_result(decklink_audio_input_packet_get_packet_time(
+                self.implementation,
+                &mut ret,
+                time_scale,
+            ))?;
+        }
+        Ok(ret)
+    }
 }
 
 unsafe impl Send for AudioInputPacket {}

@@ -123,6 +123,10 @@ HRESULT decklink_input_flush_streams(IDeckLinkInput* input) {
 	return input->FlushStreams();
 }
 
+HRESULT decklink_input_enable_audio_input(IDeckLinkInput* input, BMDAudioSampleRate sampleRate, BMDAudioSampleType sampleType, uint32_t channelCount) {
+    return input->EnableAudioInput(sampleRate, sampleType, channelCount);
+}
+
 HRESULT decklink_input_enable_video_input(IDeckLinkInput* input, BMDDisplayMode displayMode, BMDPixelFormat pixelFormat, BMDVideoInputFlags flags) {
     return input->EnableVideoInput(displayMode, pixelFormat, flags);
 }
@@ -310,6 +314,18 @@ IDeckLinkVideoOutputCallback* create_decklink_video_output_callback(void* implem
     return new VideoOutputCallback(implementation);
 }
 
+long decklink_audio_input_packet_get_sample_frame_count(IDeckLinkAudioInputPacket* packet) {
+    return packet->GetSampleFrameCount();
+}
+
+HRESULT decklink_audio_input_packet_get_bytes(IDeckLinkAudioInputPacket* packet, void** bytes) {
+    return packet->GetBytes(bytes);
+}
+
+HRESULT decklink_audio_input_packet_get_packet_time(IDeckLinkAudioInputPacket* packet, BMDTimeValue* packetTime, BMDTimeScale timeScale) {
+    return packet->GetPacketTime(packetTime, timeScale);
+}
+
 long decklink_video_frame_get_width(IDeckLinkVideoFrame* frame) {
     return frame->GetWidth();
 }
@@ -336,6 +352,14 @@ HRESULT decklink_video_frame_get_bytes(IDeckLinkVideoFrame* frame, void** bytes)
 
 HRESULT decklink_video_frame_get_timecode(IDeckLinkVideoFrame* frame, BMDTimecodeFormat format, IDeckLinkTimecode** timecode) {
     return frame->GetTimecode(format, timecode);
+}
+
+HRESULT decklink_video_input_frame_get_stream_time(IDeckLinkVideoInputFrame* frame, BMDTimeValue* frameTime, BMDTimeValue* frameDuration, BMDTimeScale timeScale) {
+    return frame->GetStreamTime(frameTime, frameDuration, timeScale);
+}
+
+HRESULT decklink_video_input_frame_get_hardware_reference_timestamp(IDeckLinkVideoInputFrame* frame, BMDTimeScale timeScale, BMDTimeValue* frameTime, BMDTimeValue* frameDuration) {
+    return frame->GetHardwareReferenceTimestamp(timeScale, frameTime, frameDuration);
 }
 
 IDeckLinkVideoConversion* create_decklink_video_conversion_instance() {
