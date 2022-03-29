@@ -1393,14 +1393,14 @@ impl AudioInputPacket {
     }
 
     pub fn get_bytes_raw(&mut self) -> Result<*const u8, Error> {
+        let mut buf: *mut c_void = std::ptr::null_mut();
         unsafe {
-            let mut buf: *mut c_void = std::ptr::null_mut();
             void_result(decklink_audio_input_packet_get_bytes(
                 self.implementation,
                 &mut buf,
             ))?;
-            Ok(buf as *mut u8)
         }
+        Ok(buf as *mut u8)
     }
 
     pub fn get_packet_time(&mut self, time_scale: i64) -> Result<i64, Error> {
