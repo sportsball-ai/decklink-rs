@@ -1404,15 +1404,15 @@ impl AudioInputPacket {
     }
 
     pub fn get_packet_time(&mut self, time_scale: i64) -> Result<i64, Error> {
+        let mut ret = 0;
         unsafe {
-            let mut ret = 0;
             void_result(decklink_audio_input_packet_get_packet_time(
                 self.implementation,
                 &mut ret,
                 time_scale,
             ))?;
-            Ok(ret)
         }
+        Ok(ret)
     }
 }
 
