@@ -75,9 +75,9 @@ HRESULT decklink_video_conversion_convert_frame(IDeckLinkVideoConversion* conver
 HRESULT decklink_timecode_get_components(IDeckLinkTimecode* timecode, uint8_t* hours, uint8_t* minutes, uint8_t* seconds, uint8_t* frames);
 HRESULT decklink_timecode_get_string(IDeckLinkTimecode* timecode, Buffer** value);
 
-HRESULT decklink_api_information_get_flag(IDeckLinkAPIInformation* attr, BMDDeckLinkAPIInformationID cfgID, bool* value);
+HRESULT decklink_api_information_get_flag(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, bool* value);
 HRESULT decklink_api_information_get_int(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, int64_t* value);
-HRESULT decklink_api_information_get_float(IDeckLinkAPIInformation* attr, BMDDeckLinkAPIInformationID cfgID, double* value);
+HRESULT decklink_api_information_get_float(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, double* value);
 HRESULT decklink_api_information_get_string(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, Buffer** value);
 
 const void* buffer_data(Buffer* str);
