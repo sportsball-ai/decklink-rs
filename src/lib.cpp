@@ -378,6 +378,10 @@ HRESULT decklink_timecode_get_string(IDeckLinkTimecode* timecode, Buffer** value
     return timecode->GetString(StringArg(value));
 }
 
+IDeckLinkAPIInformation* create_decklink_api_information_instance() {
+	return CreateDeckLinkAPIInformationInstance();
+}
+
 HRESULT decklink_api_information_get_flag(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, bool* value) {
     return apiInfo->GetFlag(cfgID, value);
 }
