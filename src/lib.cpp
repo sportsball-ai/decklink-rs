@@ -378,6 +378,26 @@ HRESULT decklink_timecode_get_string(IDeckLinkTimecode* timecode, Buffer** value
     return timecode->GetString(StringArg(value));
 }
 
+IDeckLinkAPIInformation* create_decklink_api_information_instance() {
+	return CreateDeckLinkAPIInformationInstance();
+}
+
+HRESULT decklink_api_information_get_flag(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, bool* value) {
+    return apiInfo->GetFlag(cfgID, value);
+}
+
+HRESULT decklink_api_information_get_int(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, int64_t* value) {
+    return apiInfo->GetInt(cfgID, value);
+}
+
+HRESULT decklink_api_information_get_float(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, double* value) {
+    return apiInfo->GetFloat(cfgID, value);
+}
+
+HRESULT decklink_api_information_get_string(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, Buffer** value) {
+    return apiInfo->GetString(cfgID, StringArg(value));
+}
+
 const void* buffer_data(Buffer* buf) {
     return buf->_data;
 }
