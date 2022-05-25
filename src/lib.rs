@@ -1634,6 +1634,19 @@ pub struct APIInformation {
 unsafe impl Send for APIInformation {}
 
 impl APIInformation {
+    pub fn new() -> Option<Self> {
+        unsafe {
+            let instance = create_decklink_api_information_instance();
+            if instance.is_null() {
+                None
+            } else {
+                Some(Self {
+                    implementation: instance,
+                })
+            }
+        }
+    }
+
     pub fn get_flag(&self, id: BMDDeckLinkAPIInformationID) -> Result<bool, Error> {
         unsafe {
             let mut v = false;
