@@ -143,6 +143,10 @@ HRESULT decklink_input_set_callback(IDeckLinkInput* input, IDeckLinkInputCallbac
     return input->SetCallback(callback);
 }
 
+HRESULT decklink_input_get_hardware_reference_clock(IDeckLinkInput* input, BMDTimeScale timeScale, BMDTimeValue* hardwareTime, BMDTimeValue* timeInFrame, BMDTimeValue* ticksPerFrame) {
+    return input->GetHardwareReferenceClock(timeScale, hardwareTime, timeInFrame, ticksPerFrame);
+}
+
 HRESULT decklink_output_get_display_mode_iterator(IDeckLinkOutput* output, IDeckLinkDisplayModeIterator** iterator) {
 	return output->GetDisplayModeIterator(iterator);
 }

@@ -33,6 +33,7 @@ HRESULT decklink_input_enable_video_input(IDeckLinkInput* input, BMDDisplayMode 
 HRESULT decklink_input_disable_video_input(IDeckLinkInput* input);
 HRESULT decklink_input_disable_audio_input(IDeckLinkInput* input);
 HRESULT decklink_input_set_callback(IDeckLinkInput* input, IDeckLinkInputCallback* callback);
+HRESULT decklink_input_get_hardware_reference_clock(IDeckLinkInput* input, BMDTimeScale timeScale, BMDTimeValue* hardwareTime, BMDTimeValue* timeInFrame, BMDTimeValue* ticksPerFrame);
 
 HRESULT decklink_output_get_display_mode_iterator(IDeckLinkOutput* output, IDeckLinkDisplayModeIterator** iterator);
 HRESULT decklink_output_create_video_frame(IDeckLinkOutput* output, int32_t width, int32_t height, int32_t rowBytes, BMDPixelFormat pixelFormat, BMDFrameFlags flags, IDeckLinkMutableVideoFrame **outFrame);
