@@ -1072,6 +1072,25 @@ impl Input {
     pub fn disable_audio_input(&mut self) -> Result<(), Error> {
         unsafe { void_result(decklink_input_disable_audio_input(self.implementation)) }
     }
+
+    pub fn get_hardware_reference_clock(
+        &mut self,
+        time_scale: i64,
+    ) -> Result<(i64, i64, i64), Error> {
+        let mut hardware_time = 0;
+        let mut time_in_frame = 0;
+        let mut ticks_per_frame = 0;
+        unsafe {
+            void_result(decklink_input_get_hardware_reference_clock(
+                self.implementation,
+                time_scale,
+                &mut hardware_time,
+                &mut time_in_frame,
+                &mut ticks_per_frame,
+            ))?;
+        }
+        Ok((hardware_time, time_in_frame, ticks_per_frame))
+    }
 }
 
 pub struct Output {
