@@ -1666,40 +1666,20 @@ impl APIInformation {
         }
     }
 
-    pub fn get_flag(&self, id: BMDDeckLinkAPIInformationID) -> Result<bool, Error> {
-        unsafe {
-            let mut v = false;
-            match decklink_api_information_get_flag(self.implementation, id, &mut v) {
-                0 => Ok(v),
-                result => Err(Error { result }),
-            }
-        }
-    }
-
-    pub fn get_int(&self, id: BMDDeckLinkAPIInformationID) -> Result<i64, Error> {
+    pub fn get_version_int(&self) -> Result<i64, Error> {
         unsafe {
             let mut v = 0i64;
-            match decklink_api_information_get_int(self.implementation, id, &mut v) {
+            match decklink_api_information_get_version_int(self.implementation, _BMDDeckLinkAPIInformationID_BMDDeckLinkAPIVersion, &mut v) {
                 0 => Ok(v),
                 result => Err(Error { result }),
             }
         }
     }
 
-    pub fn get_float(&self, id: BMDDeckLinkAPIInformationID) -> Result<f64, Error> {
-        unsafe {
-            let mut v = 0f64;
-            match decklink_api_information_get_float(self.implementation, id, &mut v) {
-                0 => Ok(v),
-                result => Err(Error { result }),
-            }
-        }
-    }
-
-    pub fn get_string(&self, id: BMDDeckLinkAPIInformationID) -> Result<String, Error> {
+    pub fn get_version_string(&self) -> Result<String, Error> {
         unsafe {
             let mut v: *mut Buffer = std::ptr::null_mut();
-            match decklink_api_information_get_string(self.implementation, id, &mut v) {
+            match decklink_api_information_get_version_string(self.implementation, _BMDDeckLinkAPIInformationID_BMDDeckLinkAPIVersion, &mut v) {
                 0 => {
                     let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const i8)
                         .to_str()
