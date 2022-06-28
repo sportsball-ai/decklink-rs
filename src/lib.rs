@@ -9,6 +9,7 @@ use std::{
     ffi::c_void,
     fmt,
     ops::{Deref, DerefMut},
+    os::raw::c_char,
 };
 
 use simple_error::SimpleError;
@@ -92,7 +93,7 @@ impl Device {
             let mut buf: *mut Buffer = std::ptr::null_mut();
             match decklink_get_model_name(self.implementation, &mut buf) {
                 0 => {
-                    let ret = std::ffi::CStr::from_ptr(buffer_data(buf) as *const i8)
+                    let ret = std::ffi::CStr::from_ptr(buffer_data(buf) as *const c_char)
                         .to_str()
                         .unwrap_or("")
                         .to_string();
@@ -375,7 +376,7 @@ impl Attributes {
             let mut v: *mut Buffer = std::ptr::null_mut();
             match decklink_attributes_get_string(self.implementation, id, &mut v) {
                 0 => {
-                    let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const i8)
+                    let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const c_char)
                         .to_str()
                         .unwrap_or("")
                         .to_string());
@@ -583,7 +584,7 @@ impl DisplayModeInfo {
             let mut buf: *mut Buffer = std::ptr::null_mut();
             match decklink_display_mode_get_name(self.implementation, &mut buf) {
                 0 => {
-                    let ret = std::ffi::CStr::from_ptr(buffer_data(buf) as *const i8)
+                    let ret = std::ffi::CStr::from_ptr(buffer_data(buf) as *const c_char)
                         .to_str()
                         .unwrap_or("")
                         .to_string();
@@ -1636,7 +1637,7 @@ impl Timecode {
         unsafe {
             let mut v: *mut Buffer = std::ptr::null_mut();
             void_result(decklink_timecode_get_string(self.implementation, &mut v))?;
-            let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const i8)
+            let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const c_char)
                 .to_str()
                 .unwrap_or("")
                 .to_string());
@@ -1681,7 +1682,7 @@ impl APIInformation {
             let mut v: *mut Buffer = std::ptr::null_mut();
             match decklink_api_information_get_version_string(self.implementation, _BMDDeckLinkAPIInformationID_BMDDeckLinkAPIVersion, &mut v) {
                 0 => {
-                    let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const i8)
+                    let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const c_char)
                         .to_str()
                         .unwrap_or("")
                         .to_string());
