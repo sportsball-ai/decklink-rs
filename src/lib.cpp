@@ -378,6 +378,10 @@ HRESULT decklink_timecode_get_components(IDeckLinkTimecode* timecode, uint8_t* h
     return timecode->GetComponents(hours, minutes, seconds, frames);
 }
 
+BMDTimecodeFlags decklink_timecode_get_flags(IDeckLinkTimecode* timecode) {
+    return timecode->GetFlags();
+}
+
 HRESULT decklink_timecode_get_string(IDeckLinkTimecode* timecode, Buffer** value) {
     return timecode->GetString(StringArg(value));
 }
