@@ -1604,6 +1604,15 @@ impl TimecodeFormat {
     pub const FORMAT_SERIAL: TimecodeFormat = TimecodeFormat(_BMDTimecodeFormat_bmdTimecodeSerial);
 }
 
+bitflags! {
+    pub struct TimecodeFlags: u32 {
+        const DEFAULT = _BMDTimecodeFlags_bmdTimecodeFlagDefault as u32;
+        const DROP_FRAME = _BMDTimecodeFlags_bmdTimecodeIsDropFrame as u32;
+        const FIELD_MARK = _BMDTimecodeFlags_bmdTimecodeFieldMark as u32;
+        const COLOR_FRAME = _BMDTimecodeFlags_bmdTimecodeColorFrame as u32;
+    }
+}
+
 pub struct Timecode {
     implementation: *mut IDeckLinkTimecode,
 }
@@ -1645,6 +1654,12 @@ impl Timecode {
             ret
         }
     }
+
+    pub fn get_flags(&self) -> TimecodeFlags {
+        unsafe {
+            TimecodeFlags::from_bits_truncate(decklink_timecode_get_flags(self.implementation))
+        }
+    }
 }
 
 pub struct APIInformation {
@@ -1670,7 +1685,11 @@ impl APIInformation {
     pub fn get_version_int(&self) -> Result<i64, Error> {
         unsafe {
             let mut v = 0i64;
-            match decklink_api_information_get_version_int(self.implementation, _BMDDeckLinkAPIInformationID_BMDDeckLinkAPIVersion, &mut v) {
+            match decklink_api_information_get_version_int(
+                self.implementation,
+                _BMDDeckLinkAPIInformationID_BMDDeckLinkAPIVersion,
+                &mut v,
+            ) {
                 0 => Ok(v),
                 result => Err(Error { result }),
             }
@@ -1680,7 +1699,11 @@ impl APIInformation {
     pub fn get_version_string(&self) -> Result<String, Error> {
         unsafe {
             let mut v: *mut Buffer = std::ptr::null_mut();
-            match decklink_api_information_get_version_string(self.implementation, _BMDDeckLinkAPIInformationID_BMDDeckLinkAPIVersion, &mut v) {
+            match decklink_api_information_get_version_string(
+                self.implementation,
+                _BMDDeckLinkAPIInformationID_BMDDeckLinkAPIVersion,
+                &mut v,
+            ) {
                 0 => {
                     let ret = Ok(std::ffi::CStr::from_ptr(buffer_data(v) as *const c_char)
                         .to_str()
