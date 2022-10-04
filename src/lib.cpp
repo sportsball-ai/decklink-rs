@@ -63,6 +63,10 @@ ULONG unknown_release(IUnknown* obj) {
     return obj->Release();
 }
 
+HRESULT unknown_query_interface(IUnknown* obj, REFIID iid, LPVOID* iface) {
+    return obj->QueryInterface(iid, iface);
+}
+
 IDeckLinkIterator* create_decklink_iterator_instance() {
     return CreateDeckLinkIteratorInstance();
 }
@@ -73,10 +77,6 @@ HRESULT decklink_iterator_next(IDeckLinkIterator* iterator, IDeckLink** deckLink
 
 HRESULT decklink_get_model_name(IDeckLink* decklink, Buffer** str) {
     return decklink->GetModelName(StringArg(str));
-}
-
-HRESULT decklink_query_interface(IDeckLink* decklink, REFIID iid, LPVOID* iface) {
-    return decklink->QueryInterface(iid, iface);
 }
 
 HRESULT decklink_attributes_get_flag(IDeckLinkAttributes* attr, BMDDeckLinkAttributeID cfgID, bool* value) {
@@ -396,6 +396,30 @@ HRESULT decklink_api_information_get_version_int(IDeckLinkAPIInformation* apiInf
 
 HRESULT decklink_api_information_get_version_string(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, Buffer** value) {
     return apiInfo->GetString(cfgID, StringArg(value));
+}
+
+HRESULT decklink_video_frame_ancillary_packets_get_packet_iterator(IDeckLinkVideoFrameAncillaryPackets* packets, IDeckLinkAncillaryPacketIterator** iterator) {
+    return packets->GetPacketIterator(iterator);
+}
+
+HRESULT decklink_video_frame_ancillary_packets_get_first_packet_by_id(IDeckLinkVideoFrameAncillaryPackets* packets, uint8_t DID, uint8_t SDID, IDeckLinkAncillaryPacket **packet) {
+    return packets->GetFirstPacketByID(DID, SDID, packet);
+}
+
+HRESULT decklink_ancillary_packet_iterator_next(IDeckLinkAncillaryPacketIterator* iterator, IDeckLinkAncillaryPacket** packet) {
+    return iterator->Next(packet);
+}
+
+HRESULT decklink_ancillary_packet_get_bytes(IDeckLinkAncillaryPacket* packet, BMDAncillaryPacketFormat format, const void** data, uint32_t* size) {
+    return packet->GetBytes(format, data, size);
+}
+
+uint8_t decklink_ancillary_packet_get_did(IDeckLinkAncillaryPacket* packet) {
+    return packet->GetDID();
+}
+
+uint8_t decklink_ancillary_packet_get_sdid(IDeckLinkAncillaryPacket* packet) {
+    return packet->GetSDID();
 }
 
 const void* buffer_data(Buffer* buf) {
