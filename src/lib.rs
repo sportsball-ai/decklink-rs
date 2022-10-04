@@ -87,6 +87,18 @@ impl REFIID {
     }
 }
 
+unsafe fn query_interface<T>(obj: *mut IUnknown, iid: REFIID) -> Result<*mut T, Error> {
+    let mut iface: *mut T = std::ptr::null_mut();
+    match unknown_query_interface(
+        obj,
+        iid,
+        std::mem::transmute::<&mut *mut T, &mut *mut c_void>(&mut iface),
+    ) {
+        0 => Ok(iface),
+        result => Err(Error { result: result }),
+    }
+}
+
 impl Device {
     pub fn get_model_name(&self) -> Result<String, Error> {
         unsafe {
@@ -105,25 +117,16 @@ impl Device {
         }
     }
 
-    fn query_interface<T>(&self, iid: REFIID) -> Result<*mut T, Error> {
-        unsafe {
-            let mut iface: *mut T = std::ptr::null_mut();
-            match decklink_query_interface(
-                self.implementation,
-                iid,
-                std::mem::transmute::<&mut *mut T, &mut *mut c_void>(&mut iface),
-            ) {
-                0 => Ok(iface),
-                result => Err(Error { result: result }),
-            }
-        }
-    }
-
     pub fn query_attributes(&self) -> Result<Attributes, Error> {
-        match self.query_interface(REFIID::new([
-            0xAB, 0xC1, 0x18, 0x43, 0xD9, 0x66, 0x44, 0xCB, 0x96, 0xE2, 0xA1, 0xCB, 0x5D, 0x31,
-            0x35, 0xC4,
-        ])) {
+        match unsafe {
+            query_interface(
+                self.implementation as _,
+                REFIID::new([
+                    0xAB, 0xC1, 0x18, 0x43, 0xD9, 0x66, 0x44, 0xCB, 0x96, 0xE2, 0xA1, 0xCB, 0x5D,
+                    0x31, 0x35, 0xC4,
+                ]),
+            )
+        } {
             Ok(iface) => Ok(Attributes {
                 implementation: iface,
             }),
@@ -132,10 +135,15 @@ impl Device {
     }
 
     pub fn query_status(&self) -> Result<Status, Error> {
-        match self.query_interface(REFIID::new([
-            0x5F, 0x55, 0x82, 0x00, 0x40, 0x28, 0x49, 0xBC, 0xBE, 0xAC, 0xDB, 0x3F, 0xA4, 0xA9,
-            0x6E, 0x46,
-        ])) {
+        match unsafe {
+            query_interface(
+                self.implementation as _,
+                REFIID::new([
+                    0x5F, 0x55, 0x82, 0x00, 0x40, 0x28, 0x49, 0xBC, 0xBE, 0xAC, 0xDB, 0x3F, 0xA4,
+                    0xA9, 0x6E, 0x46,
+                ]),
+            )
+        } {
             Ok(iface) => Ok(Status {
                 implementation: iface,
             }),
@@ -144,10 +152,15 @@ impl Device {
     }
 
     pub fn query_input(&self) -> Result<Input, Error> {
-        match self.query_interface(REFIID::new([
-            0xAF, 0x22, 0x76, 0x2B, 0xDF, 0xAC, 0x48, 0x46, 0xAA, 0x79, 0xFA, 0x88, 0x83, 0x56,
-            0x09, 0x95,
-        ])) {
+        match unsafe {
+            query_interface(
+                self.implementation as _,
+                REFIID::new([
+                    0xAF, 0x22, 0x76, 0x2B, 0xDF, 0xAC, 0x48, 0x46, 0xAA, 0x79, 0xFA, 0x88, 0x83,
+                    0x56, 0x09, 0x95,
+                ]),
+            )
+        } {
             Ok(iface) => Ok(Input {
                 implementation: iface,
             }),
@@ -156,10 +169,15 @@ impl Device {
     }
 
     pub fn query_output(&self) -> Result<Output, Error> {
-        match self.query_interface(REFIID::new([
-            0xCC, 0x5C, 0x8A, 0x6E, 0x3F, 0x2F, 0x4B, 0x3A, 0x87, 0xEA, 0xFD, 0x78, 0xAF, 0x30,
-            0x05, 0x64,
-        ])) {
+        match unsafe {
+            query_interface(
+                self.implementation as _,
+                REFIID::new([
+                    0xCC, 0x5C, 0x8A, 0x6E, 0x3F, 0x2F, 0x4B, 0x3A, 0x87, 0xEA, 0xFD, 0x78, 0xAF,
+                    0x30, 0x05, 0x64,
+                ]),
+            )
+        } {
             Ok(iface) => Ok(Output {
                 implementation: iface,
             }),
@@ -1538,6 +1556,143 @@ pub trait VideoFrame {
             .map(|_| Timecode {
                 implementation: timecode,
             }))
+        }
+    }
+
+    fn query_ancillary_packets(&mut self) -> Result<VideoFrameAncillaryPackets, Error> {
+        match unsafe {
+            query_interface(
+                self.implementation() as _,
+                REFIID::new([
+                    0x6C, 0x18, 0x6C, 0x0F, 0x45, 0x9E, 0x41, 0xD8, 0xAE, 0xE2, 0x48, 0x12, 0xD8,
+                    0x1A, 0xEE, 0x68,
+                ]),
+            )
+        } {
+            Ok(iface) => Ok(VideoFrameAncillaryPackets {
+                implementation: iface,
+            }),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+pub struct VideoFrameAncillaryPackets {
+    implementation: *mut IDeckLinkVideoFrameAncillaryPackets,
+}
+
+unsafe impl Send for VideoFrameAncillaryPackets {}
+
+impl Drop for VideoFrameAncillaryPackets {
+    fn drop(&mut self) {
+        unsafe {
+            unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+impl VideoFrameAncillaryPackets {
+    pub fn get_packet_iterator(&mut self) -> Result<AncillaryPacketIterator, Error> {
+        let mut iterator: *mut IDeckLinkAncillaryPacketIterator = std::ptr::null_mut();
+        unsafe {
+            void_result(decklink_video_frame_ancillary_packets_get_packet_iterator(
+                self.implementation,
+                &mut iterator,
+            ))?;
+        }
+        Ok(AncillaryPacketIterator {
+            implementation: iterator,
+        })
+    }
+
+    pub fn get_first_packet_by_id(
+        &mut self,
+        did: u8,
+        sdid: u8,
+    ) -> Result<Option<AncillaryPacket>, Error> {
+        unsafe {
+            let mut packet: *mut IDeckLinkAncillaryPacket = std::ptr::null_mut();
+            Ok(void_option_result(
+                decklink_video_frame_ancillary_packets_get_first_packet_by_id(
+                    self.implementation,
+                    did,
+                    sdid,
+                    &mut packet,
+                ),
+            )?
+            .map(|_| AncillaryPacket {
+                implementation: packet,
+            }))
+        }
+    }
+}
+
+pub struct AncillaryPacketIterator {
+    implementation: *mut IDeckLinkAncillaryPacketIterator,
+}
+
+unsafe impl Send for IDeckLinkAncillaryPacketIterator {}
+
+impl Drop for AncillaryPacketIterator {
+    fn drop(&mut self) {
+        unsafe {
+            unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+impl std::iter::Iterator for AncillaryPacketIterator {
+    type Item = AncillaryPacket;
+
+    fn next(&mut self) -> Option<AncillaryPacket> {
+        unsafe {
+            let mut packet: *mut IDeckLinkAncillaryPacket = std::ptr::null_mut();
+            if decklink_ancillary_packet_iterator_next(self.implementation, &mut packet) != 0
+                || packet.is_null()
+            {
+                return None;
+            }
+            return Some(AncillaryPacket {
+                implementation: packet,
+            });
+        }
+    }
+}
+
+pub struct AncillaryPacket {
+    implementation: *mut IDeckLinkAncillaryPacket,
+}
+
+unsafe impl Send for IDeckLinkAncillaryPacket {}
+
+impl Drop for AncillaryPacket {
+    fn drop(&mut self) {
+        unsafe {
+            unknown_release(self.implementation as *mut IUnknown);
+        }
+    }
+}
+
+impl AncillaryPacket {
+    pub fn get_did(&mut self) -> u8 {
+        unsafe { decklink_ancillary_packet_get_did(self.implementation) }
+    }
+
+    pub fn get_sdid(&mut self) -> u8 {
+        unsafe { decklink_ancillary_packet_get_sdid(self.implementation) }
+    }
+
+    pub fn get_bytes(&mut self) -> Result<&[u8], Error> {
+        unsafe {
+            let mut buf: *const c_void = std::ptr::null_mut();
+            let mut buf_len: u32 = 0;
+            void_result(decklink_ancillary_packet_get_bytes(
+                self.implementation,
+                _BMDAncillaryPacketFormat_bmdAncillaryPacketFormatUInt8,
+                &mut buf as *mut *const c_void,
+                &mut buf_len as *mut u32,
+            ))?;
+            Ok(std::slice::from_raw_parts(buf as *mut u8, buf_len as usize))
         }
     }
 }

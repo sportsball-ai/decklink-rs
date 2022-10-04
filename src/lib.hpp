@@ -8,12 +8,12 @@ HRESULT decklink_get_e_fail();
 
 ULONG unknown_add_ref(IUnknown* obj);
 ULONG unknown_release(IUnknown* obj);
+HRESULT unknown_query_interface(IUnknown* obj, REFIID iid, LPVOID* iface);
 
 IDeckLinkIterator* create_decklink_iterator_instance();
 HRESULT decklink_iterator_next(IDeckLinkIterator* iterator, IDeckLink** deckLinkInstance);
 
 HRESULT decklink_get_model_name(IDeckLink* decklink, Buffer** str);
-HRESULT decklink_query_interface(IDeckLink* decklink, REFIID iid, LPVOID* iface);
 
 HRESULT decklink_attributes_get_flag(IDeckLinkAttributes* attr, BMDDeckLinkAttributeID cfgID, bool* value);
 HRESULT decklink_attributes_get_int(IDeckLinkAttributes* attr, BMDDeckLinkAttributeID cfgID, int64_t* value);
@@ -80,6 +80,15 @@ BMDTimecodeFlags decklink_timecode_get_flags(IDeckLinkTimecode* timecode);
 IDeckLinkAPIInformation* create_decklink_api_information_instance();
 HRESULT decklink_api_information_get_version_int(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, int64_t* value);
 HRESULT decklink_api_information_get_version_string(IDeckLinkAPIInformation* apiInfo, BMDDeckLinkAPIInformationID cfgID, Buffer** value);
+
+HRESULT decklink_video_frame_ancillary_packets_get_packet_iterator(IDeckLinkVideoFrameAncillaryPackets* packets, IDeckLinkAncillaryPacketIterator** iterator);
+HRESULT decklink_video_frame_ancillary_packets_get_first_packet_by_id(IDeckLinkVideoFrameAncillaryPackets* packets, uint8_t DID, uint8_t SDID, IDeckLinkAncillaryPacket **packet);
+
+HRESULT decklink_ancillary_packet_iterator_next(IDeckLinkAncillaryPacketIterator* iterator, IDeckLinkAncillaryPacket** packet);
+
+HRESULT decklink_ancillary_packet_get_bytes(IDeckLinkAncillaryPacket* packet, BMDAncillaryPacketFormat format, const void** data, uint32_t* size);
+uint8_t decklink_ancillary_packet_get_did(IDeckLinkAncillaryPacket* packet);
+uint8_t decklink_ancillary_packet_get_sdid(IDeckLinkAncillaryPacket* packet);
 
 const void* buffer_data(Buffer* str);
 void buffer_release(Buffer* str);
