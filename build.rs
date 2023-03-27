@@ -49,10 +49,10 @@ fn main() {
 
     let bindings = bindings
         .header("src/lib.hpp")
-        .whitelist_function("buffer_.+")
-        .whitelist_function("unknown_.+")
-        .whitelist_function(".*decklink_.+")
-        .whitelist_type("_BMD.+")
+        .allowlist_function("buffer_.+")
+        .allowlist_function("unknown_.+")
+        .allowlist_function(".*decklink_.+")
+        .allowlist_type("_BMD.+")
         .layout_tests(false)
         .generate()
         .expect("unable to generate bindings");
