@@ -1349,6 +1349,30 @@ impl Output {
             ))
         }
     }
+
+    pub fn get_scheduled_stream_time(
+        &mut self,
+        desired_time_scale: i64,
+    ) -> Result<ScheduledStreamTime, Error> {
+        let mut ret = ScheduledStreamTime {
+            stream_time: 0,
+            playback_speed: 0.0,
+        };
+        unsafe {
+            void_result(decklink_output_get_scheduled_stream_time(
+                self.implementation,
+                desired_time_scale,
+                &mut ret.stream_time,
+                &mut ret.playback_speed,
+            ))?;
+        }
+        Ok(ret)
+    }
+}
+
+pub struct ScheduledStreamTime {
+    stream_time: i64,
+    playback_speed: f64,
 }
 
 bitflags! {
