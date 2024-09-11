@@ -1371,8 +1371,8 @@ impl Output {
 }
 
 pub struct ScheduledStreamTime {
-    stream_time: i64,
-    playback_speed: f64,
+    pub stream_time: i64,
+    pub playback_speed: f64,
 }
 
 bitflags! {
