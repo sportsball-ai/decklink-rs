@@ -175,6 +175,10 @@ HRESULT decklink_output_schedule_video_frame(IDeckLinkOutput* output, IDeckLinkV
     return output->ScheduleVideoFrame(theFrame, displayTime, displayDuration, timeScale);
 }
 
+HRESULT decklink_output_get_scheduled_stream_time(IDeckLinkOutput* output, BMDTimeScale desiredTimeScale, BMDTimeValue* streamTime, double* playbackSpeed) {
+    return output->GetScheduledStreamTime(desiredTimeScale, streamTime, playbackSpeed);
+}
+
 HRESULT decklink_display_mode_iterator_next(IDeckLinkDisplayModeIterator* iterator, IDeckLinkDisplayMode** deckLinkDisplayMode) {
 	return iterator->Next(deckLinkDisplayMode);
 }

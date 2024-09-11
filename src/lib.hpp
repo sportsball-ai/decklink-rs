@@ -41,6 +41,7 @@ HRESULT decklink_output_disable_video_output(IDeckLinkOutput* output);
 HRESULT decklink_output_enable_video_output(IDeckLinkOutput* output, BMDDisplayMode displayMode, BMDVideoOutputFlags flags);
 HRESULT decklink_output_set_scheduled_frame_completion_callback(IDeckLinkOutput* output, IDeckLinkVideoOutputCallback* callback);
 HRESULT decklink_output_start_scheduled_playback(IDeckLinkOutput* output, BMDTimeValue playbackStartTime, BMDTimeScale timeScale, double playbackSpeed);
+HRESULT decklink_output_get_scheduled_stream_time(IDeckLinkOutput* output, BMDTimeScale desiredTimeScale, BMDTimeValue* streamTime, double* playbackSpeed);
 HRESULT decklink_output_schedule_video_frame(IDeckLinkOutput* output, IDeckLinkVideoFrame* theFrame, BMDTimeValue displayTime, BMDTimeValue displayDuration, BMDTimeScale timeScale);
 
 HRESULT decklink_display_mode_iterator_next(IDeckLinkDisplayModeIterator* iterator, IDeckLinkDisplayMode** deckLinkDisplayMode);
